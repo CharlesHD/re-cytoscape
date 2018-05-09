@@ -1,30 +1,38 @@
 (ns re-cytoscape.component
   (:require [cljsjs.cytoscape]
             [reagent.core :as r]
-            [re-cytoscape.db :as db]))
+            [re-cytoscape.db :as db]
+            [re-frame.core :as rf]))
 
-(defn graph-inner [props]
-  (r/create-class
-   {:reagent-render
-    (fn [props]
-      [:div (dissoc props :graph :mount :update :events)])
-    :component-did-mount (:mount props)
-    :component-did-update (:update props)
-    :display-name "graph-inner"}))
+(defn graph-inner [props data]
+  (let [mnt (:mount data)
+        upd (:update data)]
+    (r/create-class
+     {:reagent-render
+      (fn [props _]
+        [:div props])
+      :component-did-mount (fn [comp] (mnt (r/props comp) (first (r/children comp))))
+      :component-did-update (fn [comp] (upd (r/props comp) (first (r/children comp))))
+      :display-name "graph-inner"})))
 
 (defn init-comp
-  [comp]
+  [props data]
   (when-let
-      [{:keys [id key config graph]} (r/props comp)]
+      [{:keys [key config elements]} data]
     (let [config (-> config
-                     (assoc :container (.getElementById js/document id)
-                            :elements graph))
+                     (assoc :container (.getElementById js/document (:id props))
+                            :elements elements))
           cy (js/cytoscape (clj->js config))]
       (db/set-cytoscape! key cy))))
 
-(defn graph [props]
+(defn graph [props graph-sub-v]
+  (let [sub (rf/subscribe graph-sub-v)]
     (fn []
-      [graph-inner (merge props
-                          {:graph @graph
-                           :mount init-comp
-                           :update init-comp})]))
+      [graph-inner
+       props
+       (merge {:elements []
+               :key key
+               :config {}
+               :mount init-comp
+               :update init-comp}
+              @sub)])))
