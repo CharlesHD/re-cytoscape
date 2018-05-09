@@ -18,26 +18,18 @@
 ;; created in the face of figwheel hot-reloading of this file.
 (defonce do-timer (js/setInterval dispatch-timer-event 1000))
 
-
 ;; -- Domino 2 - Event Handlers -----------------------------------------------
 
 (rf/reg-event-db              ;; sets up initial application state
-  :initialize                 ;; usage:  (dispatch [:initialize])
-  (fn [_ _]                   ;; the two parameters are not important here, so use _
-    {:time (js/Date.)         ;; What it returns becomes the new application state
-     :time-color "#f88"}))    ;; so the application state will initially be a map with two keys
-
-
-(rf/reg-event-db                ;; usage:  (dispatch [:time-color-change 34562])
-  :time-color-change            ;; dispatched when the user enters a new colour into the UI text field
-  (fn [db [_ new-color-value]]  ;; -db event handlers given 2 parameters:  current application state and event (a vector)
-    (assoc db :time-color new-color-value)))   ;; compute and return the new application state
+ :initialize                 ;; usage:  (dispatch [:initialize])
+ (fn [_ _]                   ;; the two parameters are not important here, so use _
+   {:time (js/Date.)}))    ;; so the application state will initially be a map with two keys
 
 
 (rf/reg-event-db                 ;; usage:  (dispatch [:timer a-js-Date])
-  :timer                         ;; every second an event of this kind will be dispatched
-  (fn [db [_ new-time]]          ;; note how the 2nd parameter is destructured to obtain the data value
-    (assoc db :time new-time)))  ;; compute and return the new application state
+ :timer                         ;; every second an event of this kind will be dispatched
+ (fn [db [_ new-time]]          ;; note how the 2nd parameter is destructured to obtain the data value
+   (assoc db :time new-time)))  ;; compute and return the new application state
 
 
 ;; -- Domino 4 - Query  -------------------------------------------------------
@@ -48,9 +40,12 @@
     (:time db))) ;; return a query computation over the application state
 
 (rf/reg-sub
-  :time-color
-  (fn [db _]
-    (:time-color db)))
+ :time-color
+ :<- [:hours]
+ :<- [:minutes]
+ :<- [:seconds]
+ (fn [[h m s] _]
+   [(int (* h (/ 255 24))) (int (* m (/ 255 60))) (int (* s (/ 255 60)))]))
 
 (rf/reg-sub
  :seconds
@@ -59,34 +54,106 @@
    (.getSeconds time)))
 
 (rf/reg-sub
+ :minutes
+ :<- [:time]
+ (fn [time _]
+   (.getMinutes time)))
+
+(rf/reg-sub
+ :hours
+ :<- [:time]
+ (fn [time _]
+   (.getHours time)))
+
+(def node-size 30.0)
+
+(rf/reg-sub
  :second-graph
  :<- [:seconds]
  :<- [:time-color]
  (fn [[seconds color] _]
-   {:elements (for [i (range 1 (inc seconds))]
+   {:elements (for [i (range seconds)]
                 {:data {:id i :color color}
-                 :position {:x (* 10 (mod i 10)) :y (* 10 (/ i 10))}})
+                 :position {:x (* node-size (mod i 10)) :y (* node-size (int (/ i 10)))}})
     :config {:style [{:selector "node"
-                      :style {:background-color "data(color)"}}]
-             :layout {:name "preset"}}
+                      :style {:background-color "data(color)"
+                              :width node-size
+                              :height node-size}}]
+             :zoom 1
+             :pan {:x (* 0.5 node-size) :y (* 0.5 node-size)}
+             :layout {:name "preset"
+                      :fit false}}
     :key :cy-seconds}))
 
+(rf/reg-sub
+ :minute-graph
+ :<- [:minutes]
+ :<- [:time-color]
+ (fn [[minutes color] _]
+   {:elements (for [i (range minutes)]
+                {:data {:id i :color color}
+                 :position {:x (* node-size (mod i 10)) :y (* node-size (int (/ i 10)))}})
+    :config {:style [{:selector "node"
+                      :style {:background-color "data(color)"
+                              :shape "vee"
+                              :width node-size
+                              :height node-size}}]
+             :zoom 1
+             :pan {:x (* 0.5 node-size) :y (* 0.5 node-size)}
+             :layout {:name "preset"
+                      :fit false}}
+    :key :cy-minutes}))
+
+(rf/reg-sub
+ :hour-graph
+ :<- [:hours]
+ :<- [:time-color]
+ (fn [[hours color] _]
+   {:elements (for [i (range hours)]
+                {:data {:id i :color color}
+                 :position {:x (* node-size (mod i 10)) :y (* node-size (int (/ i 10)))}})
+    :config {:style [{:selector "node"
+                      :style {:background-color "data(color)"
+                              :shape "star"
+                              :width node-size
+                              :height node-size}}]
+             :zoom 1
+             :pan {:x (* 0.5 node-size) :y (* 0.5 node-size)}
+             :layout {:name "preset"
+                      :fit false}}
+    :key :cy-hours}))
 ;; -- Domino 5 - View Functions ----------------------------------------------
 
 (defn second-clock
   []
-  [cy/graph {:id "cy-seconds" :style {:width "33%" :height "200px"
-                                      :background-color "#eeeeff"}}
-   [:second-graph]])
+  [:div
+   [cy/graph {:id "cy-seconds" :style {:width (* 10 node-size) :height (* 6 node-size)
+                                       :background-color "#000000"}}
+    [:second-graph]]])
+
+(defn minute-clock
+  []
+  [cy/graph {:id "cy-minutes" :style {:width (* 10 node-size) :height (* 6 node-size)
+                                      :background-color "#000000"}}
+   [:minute-graph]])
+
+(defn hour-clock
+  []
+  [cy/graph {:id "cy-hours" :style {:width (* 10 node-size) :height (* 3 node-size)
+                                    :background-color "#000000"}}
+   [:hour-graph]])
 
 (defn ui
   []
-    [:div
-     [second-clock]])
+  [:div
+   [hour-clock]
+   [minute-clock]
+   [second-clock]])
 
 
 (defn ^:export run
   []
   (rf/clear-subscription-cache!)
+  (rf/dispatch [:initialize])
   (reagent/render [ui]
                   (js/document.getElementById "app")))
