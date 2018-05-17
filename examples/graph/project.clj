@@ -27,16 +27,16 @@
                 ;; The presence of a :figwheel configuration here
                 ;; will cause figwheel to inject the figwheel client
                 ;; into your build
-                :figwheel {:on-jsload "clock.core/run"
+                :figwheel {:on-jsload "graph.core/run"
                            ;; :open-urls will pop open your application
                            ;; in the default browser once Figwheel has
                            ;; started and compiled your application.
                            ;; Comment this out once it no longer serves you.
                            :open-urls ["http://localhost:3449/index.html"]}
 
-                :compiler {:main clock.core
+                :compiler {:main graph.core
                            :asset-path "js/compiled/out"
-                           :output-to "resources/public/js/compiled/clock.js"
+                           :output-to "resources/public/js/compiled/graph.js"
                            :output-dir "resources/public/js/compiled/out"
                            :source-map-timestamp true
                            ;; To console.log CLJS data-structures make sure you enable devtools in Chrome
@@ -47,8 +47,8 @@
                ;; lein cljsbuild once min
                {:id "min"
                 :source-paths ["src"]
-                :compiler {:output-to "resources/public/js/compiled/clock.js"
-                           :main clock.core
+                :compiler {:output-to "resources/public/js/compiled/graph.js"
+                           :main graph.core
                            :optimizations :advanced
                            :pretty-print false}}]}
 
