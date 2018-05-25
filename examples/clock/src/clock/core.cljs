@@ -31,8 +31,18 @@
  (fn [db [_ new-time]]          ;; note how the 2nd parameter is destructured to obtain the data value
    (assoc db :time new-time)))  ;; compute and return the new application state
 
+(cy/reg-event-cy
+ :graph-change-elements
+ (fn [cys [_ k elements]]
+   (doto (get cys k)
+     (.remove "*")
+     (.add (clj->js elements)))))
 
 ;; -- Domino 4 - Query  -------------------------------------------------------
+(defn update-comp
+  [_ data]
+  (let [graph (:elements data)]
+    (rf/dispatch [:graph-change-elements (:key data) graph])))
 
 (rf/reg-sub
   :time
@@ -151,7 +161,6 @@
    [hour-clock]
    [minute-clock]
    [second-clock]])
-
 
 (defn ^:export run
   []
