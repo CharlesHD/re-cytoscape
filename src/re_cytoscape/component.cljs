@@ -23,7 +23,8 @@
                      (assoc :container (.getElementById js/document (:id props))
                             :elements elements))
           cy (js/cytoscape (clj->js config))]
-      (db/set-cytoscape! key cy))))
+      (db/set-cytoscape! key cy)
+      cy)))
 
 (defn graph [props graph-sub-v]
   (let [sub (rf/subscribe graph-sub-v)]
