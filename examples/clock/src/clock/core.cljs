@@ -77,63 +77,62 @@
 
 (def node-size 30.0)
 
+(defn nodes-range
+  [[start color] _]
+  (for [i (range start)]
+    {:data {:id i :color color}
+     :position {:x (* node-size (mod i 10)) :y (* node-size (int (/ i 10)))}}))
+
+(def base-conf
+  {:style [{:selector "node"
+            :style {:background-color "data(color)"
+                    :width node-size
+                    :height node-size}}]
+   :zoom 1
+   :pan {:x (* 0.5 node-size) :y (* 0.5 node-size)}
+   :layout {:name "preset"
+            :fit false}})
+
 (rf/reg-sub
- :second-graph
+ :second-graph/elements
  :<- [:seconds]
  :<- [:time-color]
- (fn [[seconds color] _]
-   {:elements (for [i (range seconds)]
-                {:data {:id i :color color}
-                 :position {:x (* node-size (mod i 10)) :y (* node-size (int (/ i 10)))}})
-    :config {:style [{:selector "node"
-                      :style {:background-color "data(color)"
-                              :width node-size
-                              :height node-size}}]
-             :zoom 1
-             :pan {:x (* 0.5 node-size) :y (* 0.5 node-size)}
-             :layout {:name "preset"
-                      :fit false}}
-    :update update-comp
+ nodes-range)
+
+(rf/reg-sub
+ :minute-graph/elements
+ :<- [:minutes]
+ :<- [:time-color]
+ nodes-range)
+
+(rf/reg-sub
+ :hour-graph/elements
+ :<- [:hours]
+ :<- [:time-color]
+ nodes-range)
+
+(rf/reg-sub
+ :second-graph
+ :<- [:second-graph/elements]
+ (fn [elems _]
+   {:elements elems
+    :config base-conf
     :key :cy-seconds}))
 
 (rf/reg-sub
  :minute-graph
- :<- [:minutes]
- :<- [:time-color]
- (fn [[minutes color] _]
-   {:elements (for [i (range minutes)]
-                {:data {:id i :color color}
-                 :position {:x (* node-size (mod i 10)) :y (* node-size (int (/ i 10)))}})
-    :config {:style [{:selector "node"
-                      :style {:background-color "data(color)"
-                              :shape "vee"
-                              :width node-size
-                              :height node-size}}]
-             :zoom 1
-             :pan {:x (* 0.5 node-size) :y (* 0.5 node-size)}
-             :layout {:name "preset"
-                      :fit false}}
-    :update update-comp
+ :<- [:minute-graph/elements]
+ (fn [elems _]
+   {:elements elems
+    :config (assoc-in base-conf [:style 0 :style :shape] "vee")
     :key :cy-minutes}))
 
 (rf/reg-sub
  :hour-graph
- :<- [:hours]
- :<- [:time-color]
- (fn [[hours color] _]
-   {:elements (for [i (range hours)]
-                {:data {:id i :color color}
-                 :position {:x (* node-size (mod i 10)) :y (* node-size (int (/ i 10)))}})
-    :config {:style [{:selector "node"
-                      :style {:background-color "data(color)"
-                              :shape "star"
-                              :width node-size
-                              :height node-size}}]
-             :zoom 1
-             :pan {:x (* 0.5 node-size) :y (* 0.5 node-size)}
-             :layout {:name "preset"
-                      :fit false}}
-    :update update-comp
+ :<- [:hour-graph/elements]
+ (fn [elems _]
+   {:elements elems
+    :config (assoc-in base-conf [:style 0 :style :shape] "star")
     :key :cy-hours}))
 ;; -- Domino 5 - View Functions ----------------------------------------------
 
