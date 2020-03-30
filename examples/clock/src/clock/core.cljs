@@ -165,6 +165,6 @@
 (defn ^:export run
   []
   (rf/clear-subscription-cache!)
-  (rf/dispatch [:initialize])
+  (rf/dispatch-sync [:initialize])
   (reagent/render [ui]
                   (js/document.getElementById "app")))

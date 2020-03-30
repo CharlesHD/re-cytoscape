@@ -6,11 +6,12 @@
     <link href="css/style.css" rel="stylesheet" type="text/css">
     <link rel="icon" href="https://clojurescript.org/images/cljs-logo-icon-32.png">
   </head>
-  <body>
+  <body onload="clock.core.run();">
     <div id="app">
       <h2>Figwheel template</h2>
       <p>Checkout your developer console.</p>
     </div>
     <script src="js/compiled/clock.js" type="text/javascript"></script>
   </body>
+  <!-- <script defer>clock.core.run();</script> -->
 </html>
